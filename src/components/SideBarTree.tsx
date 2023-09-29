@@ -7,16 +7,11 @@ const SideBarTree = () => {
   const { treeData } = useContext(AppContext) as AppContextType;
 
   return (
-    <div
-      className="overflow-auto"
-      onClick={(e) => {
-        e.stopPropagation();
-      }}
-    >
+    <div className="overflow-auto" onClick={(e) => e.stopPropagation()}>
       {treeData
         .filter(({ visibility }) => visibility === "shown")
         .map((item) => (
-          <TreeItem key={item.id} {...item} />
+          <TreeItem key={item.treeId} {...item} />
         ))}
     </div>
   );

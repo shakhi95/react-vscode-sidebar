@@ -21,7 +21,7 @@ export const getFirstIndexOfTreeId = (
   return inx;
 };
 
-export function getObjectPropertiesAsString(obj: any) {
+export const getObjectPropertiesAsString = (obj: any) => {
   let result = "";
   for (let key in obj) {
     if (obj.hasOwnProperty(key)) {
@@ -29,10 +29,9 @@ export function getObjectPropertiesAsString(obj: any) {
     }
   }
   return result;
-}
+};
 
 export const rootObj: TreeItemType = {
-  id: "root",
   treeId: "root",
   name: "root",
   type: "folder",

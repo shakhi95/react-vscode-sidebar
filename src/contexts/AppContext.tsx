@@ -31,60 +31,72 @@ const AppProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [selectedTreeItem, setSelectedTreeItem] =
     useState<TreeItemType>(rootObj);
 
-  const addItem = (type: TreeItemType["type"]) => {
-    let data = [...treeData];
+  const getNewItemIndex = (newItemType: TreeItemType["type"]) => {
+    let indexToAddItemIn = 0;
+
+    const folderTreeIdToAddNewItemIn =
+      selectedTreeItem.type === "file"
+        ? selectedTreeItem.parentTreeId
+        : selectedTreeItem.treeId;
+
+    indexToAddItemIn =
+      newItemType === "file"
+        ? getLastIndexInFolder(treeData, folderTreeIdToAddNewItemIn) + 1
+        : getFirstIndexOfTreeId(treeData, folderTreeIdToAddNewItemIn) + 1;
+
+    return indexToAddItemIn;
+  };
+
+  const getNewItemTreeId = () => {
     const id = String(new Date().getTime());
-    let treeId = "";
-    let indexToAddItem = 0;
+    let newTreeId = "";
 
     if (selectedTreeItem.type === "file") {
-      treeId = selectedTreeItem.treeId
+      newTreeId = selectedTreeItem.treeId
         .split(".")
         .slice(0, -1)
         .concat(id)
         .join(".");
-
-      indexToAddItem =
-        type === "file"
-          ? getLastIndexInFolder(data, selectedTreeItem.parentTreeId) + 1
-          : getFirstIndexOfTreeId(data, selectedTreeItem.parentTreeId) + 1;
-
-      //
     } else if (selectedTreeItem.type === "folder") {
-      //
-
-      treeId = `${selectedTreeItem.treeId}.${id}`;
-      indexToAddItem =
-        type === "file"
-          ? getLastIndexInFolder(data, selectedTreeItem.treeId) + 1
-          : getFirstIndexOfTreeId(data, selectedTreeItem.treeId) + 1;
-
-      if (selectedTreeItem.folderStatus === "close") {
-        data = data.map((item) => {
-          if (item.treeId === selectedTreeItem.treeId) {
-            const temp = { ...item };
-            temp.folderStatus = "open";
-            return temp;
-          } else if (item.treeId.includes(`${selectedTreeItem.treeId}.`)) {
-            const temp = { ...item };
-            temp.folderStatus = "close";
-            const isItemDirectChild =
-              item.parentTreeId === selectedTreeItem.treeId;
-            temp.visibility = isItemDirectChild ? "shown" : "hidden";
-            return temp;
-          } else return item;
-        });
-      }
+      newTreeId = `${selectedTreeItem.treeId}.${id}`;
     }
 
-    data.splice(indexToAddItem, 0, {
-      id,
-      treeId,
+    return newTreeId;
+  };
+
+  const addItem = (newItemType: TreeItemType["type"]) => {
+    let data = [...treeData];
+
+    const newItemTreeId = getNewItemTreeId();
+    const newItemIndex = getNewItemIndex(newItemType);
+
+    if (
+      selectedTreeItem.type === "folder" &&
+      selectedTreeItem.folderStatus === "close"
+    ) {
+      data = data.map((item) => {
+        const temp = { ...item };
+
+        if (item.treeId === selectedTreeItem.treeId) temp.folderStatus = "open";
+
+        if (item.treeId.includes(`${selectedTreeItem.treeId}.`)) {
+          temp.folderStatus = "close";
+          const isItemDirectChild =
+            item.parentTreeId === selectedTreeItem.treeId;
+          temp.visibility = isItemDirectChild ? "shown" : "hidden";
+        }
+
+        return temp;
+      });
+    }
+
+    data.splice(newItemIndex, 0, {
+      treeId: newItemTreeId,
       name: "",
-      type,
+      type: newItemType,
       folderStatus: "open",
       visibility: "shown",
-      parentTreeId: treeId.split(".").slice(0, -1).join("."),
+      parentTreeId: newItemTreeId.split(".").slice(0, -1).join("."),
     });
 
     setTreeData(data);
@@ -103,6 +115,7 @@ const AppProvider: React.FC<PropsWithChildren> = ({ children }) => {
     });
 
     setTreeData(data);
+
     if (selectedTreeItem.treeId.split(".").length > 2) {
       setSelectedTreeItem(rootObj);
     }
@@ -124,6 +137,7 @@ const AppProvider: React.FC<PropsWithChildren> = ({ children }) => {
     }
 
     setTreeData(data);
+
     if (selectedTreeItem.treeId.includes(itemTreeId)) {
       setSelectedTreeItem(rootObj);
     }
@@ -145,12 +159,11 @@ const AppProvider: React.FC<PropsWithChildren> = ({ children }) => {
     newFolderStatus
   ) => {
     const data = treeData.map((item) => {
-      if (item.treeId === itemTreeId) {
-        const temp = { ...item };
-        temp.folderStatus = newFolderStatus;
-        return temp;
-      } else if (item.treeId.includes(`${itemTreeId}.`)) {
-        const temp = { ...item };
+      const temp = { ...item };
+
+      if (item.treeId === itemTreeId) temp.folderStatus = newFolderStatus;
+
+      if (item.treeId.includes(`${itemTreeId}.`)) {
         temp.folderStatus = "close";
         const isItemDirectChild = item.parentTreeId === itemTreeId;
         temp.visibility = isItemDirectChild
@@ -158,8 +171,9 @@ const AppProvider: React.FC<PropsWithChildren> = ({ children }) => {
             ? "shown"
             : "hidden"
           : "hidden";
-        return temp;
-      } else return item;
+      }
+
+      return temp;
     });
 
     setTreeData(data);

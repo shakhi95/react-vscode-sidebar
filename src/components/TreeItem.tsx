@@ -14,7 +14,6 @@ import { AppContext, AppContextType } from "../contexts/AppContext";
 
 export type TreeItemType = {
   type: "file" | "folder";
-  id: string;
   treeId: string;
   parentTreeId: string;
   name: string;
@@ -24,7 +23,7 @@ export type TreeItemType = {
 
 const TreeItem: React.FC<TreeItemType> = (props) => {
   //
-  const { type, name, id, treeId, folderStatus } = props;
+  const { type, name, treeId, folderStatus } = props;
 
   const [isTyping, setIsTyping] = useState(name === "");
   const [inputValue, setInputValue] = useState(name);
@@ -37,13 +36,34 @@ const TreeItem: React.FC<TreeItemType> = (props) => {
     toggleFolderStatus,
   } = useContext(AppContext) as AppContextType;
 
-  const isSelected = selectedTreeItem.id === id;
+  const isSelected = selectedTreeItem.treeId === treeId;
 
-  const checkAfterInputBlur = () => {
+  const checkAfterTyping = () => {
     if (name === "" && inputValue === "") deleteItem(treeId, type);
     else if (name === inputValue) return;
     else if (name !== "" && inputValue === "") return;
     else renameItem(treeId, inputValue);
+  };
+
+  const onTreeItemClick = () => {
+    if (isTyping) return;
+    setSelectedTreeItem({
+      ...props,
+      folderStatus: folderStatus === "close" ? "open" : "close",
+    });
+    toggleFolderStatus(treeId, folderStatus === "close" ? "open" : "close");
+  };
+
+  const onInputBlur = () => {
+    setIsTyping(false);
+    checkAfterTyping();
+  };
+
+  const onInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      setIsTyping(false);
+      checkAfterTyping();
+    }
   };
 
   return (
@@ -51,18 +71,7 @@ const TreeItem: React.FC<TreeItemType> = (props) => {
       className={`text-xs flex items-center py-1 hover:bg-[#323232] border ${
         isSelected && !isTyping ? "border-[#095590]" : " border-transparent"
       }`}
-      onClick={() => {
-        if (!isTyping) {
-          setSelectedTreeItem({
-            ...props,
-            folderStatus: folderStatus === "close" ? "open" : "close",
-          });
-          toggleFolderStatus(
-            treeId,
-            folderStatus === "close" ? "open" : "close"
-          );
-        }
-      }}
+      onClick={onTreeItemClick}
       style={{ paddingLeft: treeId.split(".").length * 16 }}
     >
       {isTyping ? (
@@ -78,16 +87,8 @@ const TreeItem: React.FC<TreeItemType> = (props) => {
               className="outline-none border border-[#095590] bg-transparent flex-1 "
               type="text"
               autoFocus
-              onBlur={() => {
-                setIsTyping(false);
-                checkAfterInputBlur();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  setIsTyping(false);
-                  checkAfterInputBlur();
-                }
-              }}
+              onBlur={onInputBlur}
+              onKeyDown={onInputKeyDown}
             />
           </div>
           <div className="flex gap-1 items-center opacity-0">
